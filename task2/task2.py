@@ -1,10 +1,8 @@
 import csv
 from io import StringIO
 from collections import defaultdict
-from typing import List, Dict
 
-
-def parse_edges_to_graph(edge_csv: str) -> Dict[int, List[int]]:
+def parse_edges_to_graph(edge_csv):
 
     graph = defaultdict(list)
     reader = csv.reader(StringIO(edge_csv))
@@ -16,19 +14,15 @@ def parse_edges_to_graph(edge_csv: str) -> Dict[int, List[int]]:
 
     return(graph)
 
-
-def count_all_descendants(graph: Dict[int, List[int]], node: int) -> int:
+def count_all_descendants(graph, node):
 
     all_descendants = 0
     for child in graph[node]:
         all_descendants += 1
         all_descendants += count_all_descendants(graph, child)
+    return all_descendants
 
-    return(all_descendants)
-
-
-def count_direct_ancestors(graph: Dict[int, List[int]], node: int) -> int:
-
+def count_direct_ancestors(graph, node):
     ancestor_count = 0
     for parent, children in graph.items():
         if node in children:
@@ -36,8 +30,7 @@ def count_direct_ancestors(graph: Dict[int, List[int]], node: int) -> int:
 
     return(ancestor_count)
 
-
-def count_all_ancestors(graph: Dict[int, List[int]], node: int) -> int:
+def count_all_ancestors(graph, node):
 
     all_ancestors = 0
     for parent, children in graph.items():
@@ -47,18 +40,15 @@ def count_all_ancestors(graph: Dict[int, List[int]], node: int) -> int:
 
     return(all_ancestors)
 
-
-def count_near_nodes(graph: Dict[int, List[int]], node: int) -> int:
+def count_near_nodes(graph, node):
 
     near_count = 0
     for parent, children in graph.items():
         if node in children:
             near_count += len(graph[parent]) - 1
-
     return(near_count)
 
-
-def calculate_node_relations(graph: Dict[int, List[int]], node: int) -> List[int]:
+def calculate_node_relations(graph, node):
 
     row_1 = len(graph[node])  # Прямые потомки
     row_2 = count_direct_ancestors(graph, node)  # Прямые предки
@@ -67,7 +57,6 @@ def calculate_node_relations(graph: Dict[int, List[int]], node: int) -> List[int
     row_5 = count_near_nodes(graph, node)  # Соседи
 
     return([row_1, row_2, row_3, row_4, row_5])
-
 
 def main(edge_csv: str) -> str:
 
@@ -80,7 +69,6 @@ def main(edge_csv: str) -> str:
         result.append([node] + node_relations)
 
     return('\n'.join(' '.join(map(str, row)) for row in result))
-
 
 if __name__ == "__main__":
     test = "1,2\n1,3\n3,4\n3,5"
