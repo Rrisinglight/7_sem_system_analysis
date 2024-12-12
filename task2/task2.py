@@ -79,7 +79,7 @@ def main(edge_csv: str) -> str:
         node_relations = calculate_node_relations(graph, node)
         result.append([node] + node_relations)
 
-    return('\n'.join(','.join(map(str, row)) for row in result))
+    return('\n'.join(' '.join(map(str, row)) for row in result))
 
 
 if __name__ == "__main__":
