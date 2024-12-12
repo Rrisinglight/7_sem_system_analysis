@@ -1,76 +1,85 @@
-import csv
-from io import StringIO
-from collections import defaultdict
 
-def parse_edges_to_graph(edge_csv):
+def build_graph(edges_data: str):
+    """
+    В папку task2 загрузить файл с выполненным заданием (см. ниже); файл назвать task.py
+    В файле task.py создать функцию main(var: str): str, которая в качестве аргумента
+    принимает csv-строку, содержащую список ребер ориентированного графа-дерева.
+    Функция возвращает список экстенсиональных длин (для i-ого элемента по j-тому отношению)
+    для каждого узла по заданному набору отношений.
+    Результат функция возвращает в виде csv-строки, в которой каждая строка соответствует узлу графа,
+    а каждый элемент строки соответствует значению  для каждого вида отношений по соответствующему узлу. 
+    - показывает количество узлов, с которыми узел i находится в отношении j
+    """
+    graph = {}
+    parents = {}
+    vertices = set()
 
-    graph = defaultdict(list)
-    reader = csv.reader(StringIO(edge_csv))
+    for edge in edges_data.strip().split('\n'):
+        parent_node, child_node = map(int, edge.split(','))
 
-    for row in reader:
-        if len(row) == 2:
-            parent, child = map(int, row)
-            graph[parent].append(child)
+        vertices.add(parent_node)
+        vertices.add(child_node)
 
-    return(graph)
+        graph.setdefault(parent_node, []).append(child_node)
+        parents[child_node] = parent_node
 
-def count_all_descendants(graph, node):
+    for v in vertices:
+        graph.setdefault(v, [])
 
-    all_descendants = 0
-    for child in graph[node]:
-        all_descendants += 1
-        all_descendants += count_all_descendants(graph, child)
-    return all_descendants
+    return (graph, parents, vertices)
 
-def count_direct_ancestors(graph, node):
-    ancestor_count = 0
-    for parent, children in graph.items():
-        if node in children:
-            ancestor_count += 1
 
-    return(ancestor_count)
+def dfs(graph, root, depth_level):
 
-def count_all_ancestors(graph, node):
+    count = 0
 
-    all_ancestors = 0
-    for parent, children in graph.items():
-        if node in children:
-            all_ancestors += 1
-            all_ancestors += count_all_ancestors(graph, parent)
+    def inner_dfs(vertex, level):
+        nonlocal count
+        if level == depth_level:
+            count += 1
+            return
+        if level < depth_level:
+            for child in graph[vertex]:
+                inner_dfs(child, level + 1)
 
-    return(all_ancestors)
+    inner_dfs(root, 0)
+    return (count)
 
-def count_near_nodes(graph, node):
 
-    near_count = 0
-    for parent, children in graph.items():
-        if node in children:
-            near_count += len(graph[parent]) - 1
-    return(near_count)
+def count_matrix_metrics(graph, parents, node):
 
-def calculate_node_relations(graph, node):
+    child_count = dfs(graph, node, 1)
+    parent_node = parents.get(node)
+    direct_parent_count = 1 if parent_node else 0
+    grandchild_count = dfs(graph, node, 2)
 
-    row_1 = len(graph[node])  # Прямые потомки
-    row_2 = count_direct_ancestors(graph, node)  # Прямые предки
-    row_3 = count_all_descendants(graph, node) - row_1  # Все потомки
-    row_4 = count_all_ancestors(graph, node) - row_2  # Все предки
-    row_5 = count_near_nodes(graph, node)  # Соседи
+    uncle_count = 0
+    if parent_node and parent_node in parents:
+        grandparent_node = parents[parent_node]
+        uncle_count = len(graph[grandparent_node]) - 1
 
-    return([row_1, row_2, row_3, row_4, row_5])
+    sibling_count = 0
+    if parent_node:
+        sibling_count = len(graph[parent_node]) - 1
 
-def main(edge_csv: str) -> str:
+    return ([child_count, direct_parent_count, grandchild_count, uncle_count, sibling_count])
 
-    graph = parse_edges_to_graph(edge_csv)
-    nodes = sorted(set(graph.keys()).union(*graph.values()))
 
-    result = []
-    for node in nodes:
-        node_relations = calculate_node_relations(graph, node)
-        result.append([node] + node_relations)
+def main(edges_data):
 
-    return('\n'.join(' '.join(map(str, row)) for row in result))
+    graph, parents, vertices = build_graph(edges_data)
+    sorted_vertices = sorted(vertices)
+
+    result_lines = []
+    for v in sorted_vertices:
+        metrics = count_matrix_metrics(graph, parents, v)
+        result_lines.append(' '.join(map(str, metrics)))
+
+    return ('\n'.join(result_lines))
+
 
 if __name__ == "__main__":
-    test = "1,2\n1,3\n3,4\n3,5"
 
-    print(main(test))
+    test_data = "1,2\n1,3\n3,4\n3,5"
+
+    print(main(test_data))
